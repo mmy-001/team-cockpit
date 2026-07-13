@@ -97,13 +97,7 @@ export default function NodeDetailPage() {
                 try {
                   const res = await fetch(`/api/nodes/${id}`, { method: "DELETE" });
                   if (!res.ok) throw new Error("删除失败");
-                  if (typeof window !== "undefined") {
-                    if (window.history.length > 1) {
-                      router.back();
-                    } else {
-                      router.push("/");
-                    }
-                  }
+                  router.push("/");
                 } catch (err: any) {
                   setError(err.message);
                 } finally {

@@ -25,11 +25,7 @@ function NewWeeklyPage() {
   const { members } = useMembers();
 
   function goBack() {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-    } else {
-      router.push("/");
-    }
+    router.push("/");
   }
 
   const [author, setAuthor] = useState(searchParams.get("author") || "");

@@ -3,25 +3,22 @@
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
+/**
+ * 全局返回按钮。
+ * 当前所有子页面（/weeklies/*, /nodes/*, /persons/*）的上级路由都是首页 /。
+ * 使用 router.push 确定性跳转，不依赖浏览器历史，确保每次点击都丝滑返回。
+ */
 export default function BackButton({
-  fallback = "/",
   children = "返回",
 }: {
-  fallback?: string;
   children?: React.ReactNode;
 }) {
   const router = useRouter();
 
   return (
     <button
-      onClick={() => {
-        if (typeof window !== "undefined" && window.history.length > 1) {
-          router.back();
-        } else {
-          router.push(fallback);
-        }
-      }}
-      className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-notion-fg mb-6 cursor-pointer"
+      onClick={() => router.push("/")}
+      className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-notion-fg mb-6 transition-colors"
       type="button"
     >
       <ArrowLeft size={16} />

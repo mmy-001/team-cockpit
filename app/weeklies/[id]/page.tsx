@@ -165,13 +165,7 @@ export default function WeeklyDetailPage() {
               try {
                 const res = await fetch(`/api/weeklies/${id}`, { method: "DELETE" });
                 if (!res.ok) throw new Error("删除失败");
-                if (typeof window !== "undefined") {
-                  if (window.history.length > 1) {
-                    router.back();
-                  } else {
-                    router.push("/");
-                  }
-                }
+                router.push("/");
               } catch (err: any) {
                 setError(err.message);
               } finally {
@@ -301,7 +295,7 @@ export default function WeeklyDetailPage() {
       </div>
 
       <div className="flex justify-end gap-3">
-        <BackButton fallback="/" />
+        <BackButton />
         <button
           onClick={handleSave}
           disabled={saving}
