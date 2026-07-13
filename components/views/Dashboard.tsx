@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { ProjectNode, WeeklyReport, Member } from "@/lib/types";
 import { STATUS_COLORS, PRIORITY_COLORS } from "@/lib/types";
@@ -33,6 +33,14 @@ export default function Dashboard({
   members: Member[];
   onRefresh?: () => void;
 }) {
+  // 每分钟 tick 一次，让 useMemo 重新计算 isOverdue / isDueSoon / riskLevel
+  // 这样逾期状态、即将到期、决策建议都能随时间自动更新，无需手动刷新
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const stats = useMemo(() => {
     const total = nodes.length;
     const completed = nodes.filter(isCompleted).length;
@@ -75,7 +83,7 @@ export default function Dashboard({
       status, priority, simpleProgress, weightedProgress,
       upcoming, alerts, quadrants, highRisk, workload,
     };
-  }, [nodes, members]);
+  }, [nodes, members, tick]);
 
   if (nodes.length === 0) {
     return (
