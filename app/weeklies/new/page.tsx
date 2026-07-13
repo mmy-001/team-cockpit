@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import BackButton from "@/components/BackButton";
 import FreeEditor from "@/components/editor/FreeEditor";
 import { textToBlocks, toNotionBlocks, sectionsToText, TEMPLATE_TEXT } from "@/lib/blocks";
@@ -21,15 +21,15 @@ export default function NewWeeklyPageWrapper() {
 
 function NewWeeklyPage() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const { members } = useMembers();
 
   function goBack() {
-    // 返回上一页，保留之前的 Tab 状态和滚动位置
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-    } else {
-      router.push("/");
+    if (typeof window !== "undefined") {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = "/";
+      }
     }
   }
 
@@ -120,7 +120,7 @@ function NewWeeklyPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "保存失败");
-      router.back();
+      goBack();
     } catch (err: any) {
       setError(err.message ?? "保存失败");
     } finally {

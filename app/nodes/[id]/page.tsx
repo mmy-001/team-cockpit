@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useNode, useNodes } from "@/lib/hooks";
 import BackButton from "@/components/BackButton";
 import { PRIORITY_COLORS, STATUS_COLORS, STATUSES, PRIORITIES } from "@/lib/types";
@@ -10,7 +10,6 @@ import { Trash2, Plus } from "lucide-react";
 
 export default function NodeDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params.id as string;
   const { node, isLoading, mutate } = useNode(id);
   const { nodes: allNodes } = useNodes();
@@ -97,7 +96,13 @@ export default function NodeDetailPage() {
                 try {
                   const res = await fetch(`/api/nodes/${id}`, { method: "DELETE" });
                   if (!res.ok) throw new Error("删除失败");
-                  router.back();
+                  if (typeof window !== "undefined") {
+                    if (window.history.length > 1) {
+                      window.history.back();
+                    } else {
+                      window.location.href = "/";
+                    }
+                  }
                 } catch (err: any) {
                   setError(err.message);
                 } finally {

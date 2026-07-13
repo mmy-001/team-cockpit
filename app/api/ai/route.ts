@@ -134,7 +134,8 @@ function extractJSON(reply: string): string | null {
  * MiniMax AI 结构化周报 —— 将口语/打字输入转为四段式周报内容。
  */
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.MINIMAX_API_KEY;
+  // 去除 BOM 字符（\uFEFF = 65279），避免 fetch header 编码失败
+  const apiKey = (process.env.MINIMAX_API_KEY || "").replace(/\uFEFF/g, "").trim();
   if (!apiKey) {
     return NextResponse.json({ error: "未配置 MINIMAX_API_KEY" }, { status: 500 });
   }

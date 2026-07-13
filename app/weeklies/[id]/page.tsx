@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import BackButton from "@/components/BackButton";
 import FreeEditor from "@/components/editor/FreeEditor";
 import {
@@ -19,7 +19,6 @@ type Attachment = { id: string; url: string; type: "image" | "video" };
 
 export default function WeeklyDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params.id as string;
 
   const [weekly, setWeekly] = useState<WeeklyReport | null>(null);
@@ -165,7 +164,13 @@ export default function WeeklyDetailPage() {
               try {
                 const res = await fetch(`/api/weeklies/${id}`, { method: "DELETE" });
                 if (!res.ok) throw new Error("删除失败");
-                router.back();
+                if (typeof window !== "undefined") {
+                  if (window.history.length > 1) {
+                    window.history.back();
+                  } else {
+                    window.location.href = "/";
+                  }
+                }
               } catch (err: any) {
                 setError(err.message);
               } finally {
