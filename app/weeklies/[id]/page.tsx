@@ -12,7 +12,8 @@ import {
   type EditorBlock,
 } from "@/lib/blocks";
 import type { WeeklyReport } from "@/lib/types";
-import { Save, Trash2 } from "lucide-react";
+import { Save, Trash2, Lightbulb, Sparkles, Loader2 } from "lucide-react";
+import { sectionsToText } from "@/lib/blocks";
 
 type Attachment = { id: string; url: string; type: "image" | "video" };
 
@@ -29,6 +30,9 @@ export default function WeeklyDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [aiInput, setAiInput] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [showAiPanel, setShowAiPanel] = useState(false);
 
   useEffect(() => {
     fetch(`/api/weeklies/${id}`)
@@ -57,6 +61,36 @@ export default function WeeklyDetailPage() {
         setLoading(false);
       });
   }, [id]);
+
+  async function handleAiStructure() {
+    if (!weekly || !aiInput.trim()) return;
+    setAiLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: aiInput, author: weekly.author, week: weekly.week }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error ?? `AI 请求失败 (${res.status})`);
+      }
+      if (!data.summary && !data.sections) {
+        throw new Error("AI 返回数据不完整，请重试");
+      }
+
+      const result = sectionsToText(data.summary ?? "", data.sections ?? {});
+      setWeekly({ ...weekly, summary: result.summary });
+      setBodyText(result.text);
+      setShowAiPanel(false);
+    } catch (err: any) {
+      setError(err.message ?? "AI 结构化失败，请重试");
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   async function handleSave() {
     if (!weekly) return;
@@ -185,7 +219,60 @@ export default function WeeklyDetailPage() {
             className="w-full border border-notion-border rounded px-3 py-2"
             placeholder="例如：本周完成用户调研并输出报告，下周进入方案设计阶段"
           />
-          <div className="text-xs text-gray-400 mt-1">这句话会显示在项目面板中，建议包含关键进展与下一步计划</div>
+          <div className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+            <Sparkles size={11} className="text-notion-blue" />
+            AI 结构化填充时会自动生成基于全部内容的总结，也可手动修改
+          </div>
+        </div>
+
+        {/* AI 结构化面板 */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-gray-500 text-sm">AI 辅助结构化（可选）</label>
+            <button
+              onClick={() => setShowAiPanel(!showAiPanel)}
+              className="flex items-center gap-1 text-xs text-notion-blue hover:underline"
+            >
+              <Sparkles size={13} />
+              {showAiPanel ? "收起" : "展开 AI 面板"}
+            </button>
+          </div>
+          {showAiPanel && (
+            <div className="border border-notion-blue/30 rounded p-3 bg-blue-50/30 space-y-3">
+              <p className="text-xs text-gray-600 leading-relaxed">
+                将本周工作内容粘贴到下方（支持口述转文字），AI 将自动识别内容归属，
+                拆解为四段式周报，<strong>同时生成一句话总结和完整正文</strong>。
+              </p>
+              <textarea
+                value={aiInput}
+                onChange={(e) => setAiInput(e.target.value)}
+                className="w-full border border-notion-border rounded px-3 py-2 h-32 text-sm resize-y font-mono"
+                placeholder="例如：这周做完了首页改版，上线后点击率提升了15%。同时在推进用户中心的方案设计..."
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400">
+                  {aiInput.length > 0 ? `已输入 ${aiInput.length} 字` : "输入越多，AI 生成越精准"}
+                </span>
+                <button
+                  onClick={handleAiStructure}
+                  disabled={aiLoading || !aiInput.trim()}
+                  className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-notion-blue text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                >
+                  {aiLoading ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      AI 分析中...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={14} />
+                      AI 结构化填充
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div>
