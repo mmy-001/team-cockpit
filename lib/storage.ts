@@ -41,6 +41,70 @@ function hasRedis(): boolean {
   return !!(process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || process.env.KV_URL);
 }
 
+// ---- Redis 自动种子：首次部署时从 JSON 文件导入存量数据 ----
+let seedPromise: Promise<void> | null = null;
+
+async function seedRedisFromJsonIfEmpty(): Promise<void> {
+  // 并行检查 Redis 中是否已有数据
+  const [existingNodes, existingWeeklies, existingMembers] = await Promise.all([
+    redisGet<unknown[]>(K_NODES),
+    redisGet<unknown[]>(K_WEEKLIES),
+    redisGet<unknown[]>(K_MEMBERS),
+  ]);
+
+  const tasks: Promise<void>[] = [];
+
+  if (!existingNodes || existingNodes.length === 0) {
+    const jsonNodes = await fsGetAllNodes();
+    if (jsonNodes.length > 0) {
+      tasks.push(redisSet(K_NODES, jsonNodes));
+    }
+  }
+
+  if (!existingWeeklies || existingWeeklies.length === 0) {
+    const jsonWeeklies = await fsGetAllWeeklies();
+    if (jsonWeeklies.length > 0) {
+      tasks.push(redisSet(K_WEEKLIES, jsonWeeklies));
+    }
+  }
+
+  if (!existingMembers || existingMembers.length === 0) {
+    const jsonMembers = await fsGetAllMembers();
+    if (jsonMembers.length > 0) {
+      tasks.push(redisSet(K_MEMBERS, jsonMembers));
+    }
+  }
+
+  await Promise.all(tasks);
+}
+
+async function ensureRedisSeeded(): Promise<void> {
+  if (!hasRedis()) return;
+  if (!seedPromise) {
+    seedPromise = seedRedisFromJsonIfEmpty();
+  }
+  await seedPromise;
+}
+
+/**
+ * 公开导出：强制从 JSON 文件重新导入所有数据到 Redis（覆盖已有数据）。
+ * 用于手动初始化或数据修复。
+ */
+export async function seedRedisForce(): Promise<{ nodes: number; weeklies: number; members: number }> {
+  if (!hasRedis()) throw new Error("Redis not configured");
+  const [jsonNodes, jsonWeeklies, jsonMembers] = await Promise.all([
+    fsGetAllNodes(),
+    fsGetAllWeeklies(),
+    fsGetAllMembers(),
+  ]);
+  await Promise.all([
+    redisSet(K_NODES, jsonNodes),
+    redisSet(K_WEEKLIES, jsonWeeklies),
+    redisSet(K_MEMBERS, jsonMembers),
+  ]);
+  return { nodes: jsonNodes.length, weeklies: jsonWeeklies.length, members: jsonMembers.length };
+}
+
 // ---- Redis 后端 ----
 let redisClient: any = null;
 
@@ -75,7 +139,10 @@ const K_MEMBERS = "members";
 // ---- Nodes ----
 
 export async function getAllNodes(): Promise<ProjectNode[]> {
-  if (hasRedis()) return (await redisGet<ProjectNode[]>(K_NODES)) ?? [];
+  if (hasRedis()) {
+    await ensureRedisSeeded();
+    return (await redisGet<ProjectNode[]>(K_NODES)) ?? [];
+  }
   return fsGetAllNodes();
 }
 
@@ -131,7 +198,10 @@ export async function deleteNode(id: string): Promise<void> {
 // ---- Weeklies ----
 
 export async function getAllWeeklies(): Promise<WeeklyReport[]> {
-  if (hasRedis()) return (await redisGet<WeeklyReport[]>(K_WEEKLIES)) ?? [];
+  if (hasRedis()) {
+    await ensureRedisSeeded();
+    return (await redisGet<WeeklyReport[]>(K_WEEKLIES)) ?? [];
+  }
   return fsGetAllWeeklies();
 }
 
@@ -222,6 +292,7 @@ export async function setWeeklyBlocks(id: string, blocks: any[]): Promise<void> 
 
 export async function getAllMembers(): Promise<Member[]> {
   if (hasRedis()) {
+    await ensureRedisSeeded();
     let members = (await redisGet<Member[]>(K_MEMBERS)) ?? [];
     // 自动从 nodes 补充新负责人
     const nodes = await getAllNodes();
