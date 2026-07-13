@@ -80,7 +80,7 @@ function parsePlainTextToSections(text: string): { summary: string; sections: Re
 }
 
 /**
- * 从 AI 回复中提取 JSON，支持多种包裹格式。
+ * 从 AI 回复中提取 JSON，支持多种包裹格式，包括带 markdown 列表前缀的 JSON。
  */
 function extractJSON(reply: string): string | null {
   const strategies = [
@@ -94,7 +94,26 @@ function extractJSON(reply: string): string | null {
       const m = reply.match(/```([\s\S]*?)```/);
       return m ? m[1].trim() : null;
     },
-    // 3. 直接 { ... } 包裹的 JSON（贪婪匹配最后一个}）
+    // 3. 先清理 markdown 列表前缀（如 AI 把 JSON 每行前加了 "- "），再提取 { ... }
+    () => {
+      const cleaned = reply
+        .split('\n')
+        .map((l) => l.replace(/^[-*•]\s+/, '').replace(/^>\s+/, '').replace(/^\d+\.\s+/, '').trim())
+        .join('\n');
+      const firstBrace = cleaned.indexOf("{");
+      const lastBrace = cleaned.lastIndexOf("}");
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        const jsonStr = cleaned.slice(firstBrace, lastBrace + 1).trim();
+        try {
+          JSON.parse(jsonStr);
+          return jsonStr;
+        } catch {
+          return null;
+        }
+      }
+      return null;
+    },
+    // 4. 原始文本中查找 { ... }
     () => {
       const firstBrace = reply.indexOf("{");
       const lastBrace = reply.lastIndexOf("}");
@@ -103,7 +122,7 @@ function extractJSON(reply: string): string | null {
       }
       return null;
     },
-    // 4. 尝试用 [ ... ] 包裹（有些人可能返回数组）
+    // 5. 尝试用 [ ... ] 包裹
     () => {
       const firstBracket = reply.indexOf("[");
       const lastBracket = reply.lastIndexOf("]");
