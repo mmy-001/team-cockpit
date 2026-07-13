@@ -1,6 +1,78 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
+ * 规范化 AI 可能返回的各种 section key，统一映射到中文标准 key。
+ * AI 可能返回英文 key、大小写变体、中文简写等。
+ */
+function normalizeSectionKeys(sections: Record<string, any>): Record<string, string[]> {
+  const result: Record<string, string[]> = {
+    "已完成": [],
+    "进行中": [],
+    "问题同步": [],
+    "下周计划": [],
+  };
+
+  const keyMap: Record<string, string> = {
+    // 中文标准
+    "已完成": "已完成", "完成": "已完成", "已完成的": "已完成",
+    "进行中": "进行中", "进行": "进行中", "进行中的": "进行中", "推进中": "进行中",
+    "问题同步": "问题同步", "问题": "问题同步", "风险": "问题同步", "阻塞": "问题同步", "问题与风险": "问题同步",
+    "下周计划": "下周计划", "计划": "下周计划", "下周": "下周计划",
+    // 英文
+    "completed": "已完成", "done": "已完成", "finished": "已完成",
+    "in_progress": "进行中", "in-progress": "进行中", "ongoing": "进行中", "progress": "进行中",
+    "problems": "问题同步", "issues": "问题同步", "risks": "问题同步", "blockers": "问题同步", "problem": "问题同步",
+    "next_week": "下周计划", "next-week": "下周计划", "plan": "下周计划", "next": "下周计划",
+  };
+
+  for (const [key, value] of Object.entries(sections)) {
+    const normalized = keyMap[key] || keyMap[key.toLowerCase()] || keyMap[key.replace(/[\s_-]/g, "")];
+    const target = normalized || "已完成"; // 无法识别的 key 归入"已完成"
+
+    if (Array.isArray(value)) {
+      const items = value
+        .filter((item: any) => item !== null && item !== undefined)
+        .map((item: any) => {
+          const str = typeof item === "string" ? item : (item?.content || item?.text || JSON.stringify(item));
+          return str.trim();
+        })
+        .filter((item: string) => item.length > 0);
+      result[target] = [...result[target], ...items];
+    } else if (typeof value === "string" && value.trim()) {
+      result[target].push(value.trim());
+    }
+  }
+
+  return result;
+}
+
+/**
+ * 修复 AI 返回的常见 JSON 格式错误（尾部逗号、中文引号等）。
+ */
+function repairJSON(raw: string): string {
+  let fixed = raw;
+  // 移除尾部逗号（在 } 或 ] 之前）
+  fixed = fixed.replace(/,(\s*[}\]])/g, "$1");
+  // 替换中文引号为英文引号
+  fixed = fixed.replace(/\u201c/g, '"').replace(/\u201d/g, '"').replace(/\u2018/g, "'").replace(/\u2019/g, "'");
+  return fixed;
+}
+
+/**
+ * 当 AI 没有返回 summary 时，从 sections 中自动生成一个兜底摘要。
+ */
+function generateFallbackSummary(sections: Record<string, string[]>): string {
+  const completed = sections["已完成"] || [];
+  const inProgress = sections["进行中"] || [];
+  if (completed.length > 0 && inProgress.length > 0) {
+    return `本周${completed[0]}，同时推进${inProgress[0]}`;
+  }
+  if (completed.length > 0) return completed[0];
+  if (inProgress.length > 0) return `本周推进：${inProgress[0]}`;
+  return "本周工作概览";
+}
+
+/**
  * 将纯文本回复按中文数字标题拆解为四段式结构。
  * 当 AI 没有返回 JSON 时，作为最后的保底方案。
  */
@@ -16,7 +88,6 @@ function parsePlainTextToSections(text: string): { summary: string; sections: Re
 
   // 按中文数字标题拆分
   const parts: string[] = [];
-  let lastIndex = -1;
   const positions: { idx: number; title: string }[] = [];
 
   sectionTitles.forEach((title) => {
@@ -227,20 +298,60 @@ export async function POST(req: NextRequest) {
     // ====== 策略1: 尝试解析 JSON ======
     const jsonStr = extractJSON(reply);
     if (jsonStr) {
-      const parsed = JSON.parse(jsonStr);
-      // 验证必要字段
-      if (parsed.summary && parsed.sections) {
-        // 确保四个 section 都存在
-        const validSections: Record<string, string[]> = {
-          "已完成": Array.isArray(parsed.sections["已完成"]) ? parsed.sections["已完成"] : [],
-          "进行中": Array.isArray(parsed.sections["进行中"]) ? parsed.sections["进行中"] : [],
-          "问题同步": Array.isArray(parsed.sections["问题同步"]) ? parsed.sections["问题同步"] : [],
-          "下周计划": Array.isArray(parsed.sections["下周计划"]) ? parsed.sections["下周计划"] : [],
-        };
-        return NextResponse.json({
-          summary: typeof parsed.summary === "string" ? parsed.summary : String(parsed.summary || ""),
-          sections: validSections,
-        });
+      let parsed: any = null;
+      // 先尝试直接解析，失败则修复后再解析
+      try {
+        parsed = JSON.parse(jsonStr);
+      } catch {
+        const repaired = repairJSON(jsonStr);
+        try {
+          parsed = JSON.parse(repaired);
+        } catch {
+          // 修复后仍失败，抛给后续策略
+        }
+      }
+
+      if (parsed) {
+        // 情况A: 标准格式 { summary, sections }
+        if (parsed.sections && typeof parsed.sections === "object") {
+          const validSections = normalizeSectionKeys(parsed.sections);
+          const summary = typeof parsed.summary === "string" && parsed.summary.trim()
+            ? parsed.summary.trim()
+            : generateFallbackSummary(validSections);
+          return NextResponse.json({ summary, sections: validSections });
+        }
+
+        // 情况B: AI 直接将 section 作为顶层 key（如 { "已完成": [...], "进行中": [...] }）
+        const knownKeys = ["已完成", "进行中", "问题同步", "下周计划",
+          "完成", "进行", "问题", "计划", "下周",
+          "completed", "in_progress", "in-progress", "problems", "next_week"];
+        const hasSectionLikeKey = knownKeys.some((k) => k in parsed && Array.isArray(parsed[k]));
+        if (hasSectionLikeKey) {
+          const validSections = normalizeSectionKeys(parsed);
+          const summary = typeof parsed.summary === "string" && parsed.summary.trim()
+            ? parsed.summary.trim()
+            : generateFallbackSummary(validSections);
+          return NextResponse.json({ summary, sections: validSections });
+        }
+
+        // 情况C: parsed 是数组，每个元素有 { section, items } 结构
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const rawSections: Record<string, string[]> = {};
+          for (const item of parsed) {
+            if (item && typeof item === "object") {
+              const secName = item.section || item.title || item.name || item.type;
+              const secItems = item.items || item.content || item.data;
+              if (secName && secItems) {
+                rawSections[secName] = Array.isArray(secItems) ? secItems : [String(secItems)];
+              }
+            }
+          }
+          if (Object.keys(rawSections).length > 0) {
+            const validSections = normalizeSectionKeys(rawSections);
+            const summary = generateFallbackSummary(validSections);
+            return NextResponse.json({ summary, sections: validSections });
+          }
+        }
       }
     }
 

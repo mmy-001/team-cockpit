@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import BackButton from "@/components/BackButton";
 import FreeEditor from "@/components/editor/FreeEditor";
 import { textToBlocks, toNotionBlocks, sectionsToText, TEMPLATE_TEXT } from "@/lib/blocks";
@@ -21,15 +21,14 @@ export default function NewWeeklyPageWrapper() {
 
 function NewWeeklyPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { members } = useMembers();
 
   function goBack() {
-    if (typeof window !== "undefined") {
-      if (window.history.length > 1) {
-        window.history.back();
-      } else {
-        window.location.href = "/";
-      }
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/");
     }
   }
 
