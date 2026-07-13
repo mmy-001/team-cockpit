@@ -42,7 +42,10 @@ function NewWeeklyPage() {
   const [error, setError] = useState<string | null>(null);
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [showAiPanel, setShowAiPanel] = useState(false);
+  // AI 面板默认展开，可通过 ?aiOpen=false 关闭
+  const [showAiPanel, setShowAiPanel] = useState(
+    searchParams.get("aiOpen") !== "false"
+  );
 
   const title = `${author || "未署名"} - ${week}`;
 

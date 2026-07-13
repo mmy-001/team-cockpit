@@ -8,7 +8,8 @@ import GanttChart from "@/components/views/GanttChart";
 import WeeklySummary from "@/components/views/WeeklySummary";
 import Dashboard from "@/components/views/Dashboard";
 import { getThisWeekMonday } from "@/lib/date";
-import { List, Kanban, GanttChartSquare, CalendarDays, RefreshCw, LayoutDashboard } from "lucide-react";
+import Link from "next/link";
+import { List, Kanban, GanttChartSquare, CalendarDays, RefreshCw, LayoutDashboard, Sparkles } from "lucide-react";
 
 const TABS = [
   { id: "overview", label: "项目总览", icon: LayoutDashboard },
@@ -86,13 +87,22 @@ export default function Home() {
     <main className="max-w-7xl mx-auto px-6 py-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold text-notion-fg">团队驾驶舱</h1>
-        <button
-          onClick={refresh}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm border border-notion-border rounded hover:bg-notion-hover"
-        >
-          <RefreshCw size={14} className={anyLoading ? "animate-spin" : ""} />
-          刷新
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/weeklies/new?aiOpen=true"
+            className="flex items-center gap-2 px-4 py-2 text-sm bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 shadow-sm hover:shadow transition-all"
+          >
+            <Sparkles size={15} />
+            AI 快速写周报
+          </Link>
+          <button
+            onClick={refresh}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm border border-notion-border rounded hover:bg-notion-hover"
+          >
+            <RefreshCw size={14} className={anyLoading ? "animate-spin" : ""} />
+            刷新
+          </button>
+        </div>
       </div>
 
       <div className="flex border-b border-notion-border mb-6">
@@ -124,11 +134,22 @@ export default function Home() {
         </div>
       )}
 
-      {!showLoading && activeTab === "overview" && <Dashboard nodes={nodes} weeklies={thisWeekWeeklies} members={members} />}
-      {!showLoading && activeTab === "list" && <NodeList nodes={nodes} weeklies={allWeeklies} members={members} onRefresh={refresh} />}
-      {!showLoading && activeTab === "kanban" && <KanbanBoard nodes={nodes} weeklies={allWeeklies} onUpdate={refresh} />}
-      {!showLoading && activeTab === "gantt" && <GanttChart nodes={nodes} />}
-      {!showLoading && activeTab === "weekly" && <WeeklySummary weeklies={allWeeklies} />}
+      {/* 所有 Tab 面板始终挂载，仅用 CSS 控制显隐，避免每次切换时卸载/重挂载导致卡顿 */}
+      <div style={{ display: !showLoading && activeTab === "overview" ? "block" : "none" }}>
+        <Dashboard nodes={nodes} weeklies={thisWeekWeeklies} members={members} />
+      </div>
+      <div style={{ display: !showLoading && activeTab === "list" ? "block" : "none" }}>
+        <NodeList nodes={nodes} weeklies={allWeeklies} members={members} onRefresh={refresh} />
+      </div>
+      <div style={{ display: !showLoading && activeTab === "kanban" ? "block" : "none" }}>
+        <KanbanBoard nodes={nodes} weeklies={allWeeklies} onUpdate={refresh} />
+      </div>
+      <div style={{ display: !showLoading && activeTab === "gantt" ? "block" : "none" }}>
+        <GanttChart nodes={nodes} />
+      </div>
+      <div style={{ display: !showLoading && activeTab === "weekly" ? "block" : "none" }}>
+        <WeeklySummary weeklies={allWeeklies} />
+      </div>
     </main>
   );
 }
