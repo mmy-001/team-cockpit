@@ -86,7 +86,7 @@ export default function Home() {
   return (
     <main className="max-w-7xl mx-auto px-6 py-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-notion-fg">团队驾驶舱</h1>
+        <h1 className="text-2xl font-bold text-notion-fg">产品运营团队管理面板</h1>
         <div className="flex items-center gap-2">
           <Link
             href="/weeklies/new?aiOpen=true"

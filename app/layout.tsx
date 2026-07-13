@@ -3,7 +3,7 @@ import Providers from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "团队驾驶舱",
+  title: "产品运营团队管理面板",
   description: "基于 Notion 的团队项目管理面板",
 };
 

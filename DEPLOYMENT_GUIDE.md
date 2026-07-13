@@ -1,4 +1,4 @@
-# 团队驾驶舱 (Team Cockpit) — 部署与维护指南
+# 产品运营团队管理面板 (Team Cockpit) — 部署与维护指南
 
 > 最后更新：2026-07-13  
 > 项目仓库：https://github.com/mmy-001/team-cockpit  
