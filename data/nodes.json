@@ -1,0 +1,194 @@
+[
+  {
+    "id": "node_media_ops",
+    "name": "媒体运营（抖音/视频号/B站）",
+    "status": "已完成",
+    "owner": "陈子彦",
+    "start": "2025-05-06",
+    "end": "2026-07-05",
+    "priority": "重要紧急",
+    "dependsOn": [],
+    "parents": [],
+    "deliverable": "每周完成抖音/视频号/B站内容发布与数据同步",
+    "url": ""
+  },
+  {
+    "id": "node_design_assets",
+    "name": "海报/封面/配图",
+    "status": "已完成",
+    "owner": "陈子彦",
+    "start": "2025-05-06",
+    "end": "2026-07-04",
+    "priority": "重要不紧急",
+    "dependsOn": [],
+    "parents": [],
+    "deliverable": "输出公众号封面、转发图、运营物料",
+    "url": ""
+  },
+  {
+    "id": "node_short_video_kling",
+    "name": "短视频产出：深度测评可灵AI",
+    "status": "阻塞",
+    "owner": "陈子彦",
+    "start": "2025-05-25",
+    "end": "2026-07-02",
+    "priority": "重要紧急",
+    "dependsOn": [
+      "node_design_assets"
+    ],
+    "parents": [],
+    "deliverable": "完成可灵AI电影感/商业运用/用户体验系列成片",
+    "url": ""
+  },
+  {
+    "id": "node_ai_review_audit",
+    "name": "AI测评网笔记审核",
+    "status": "已完成",
+    "owner": "刘雯文",
+    "start": "2025-05-06",
+    "end": "2026-07-05",
+    "priority": "重要紧急",
+    "dependsOn": [],
+    "parents": [],
+    "deliverable": "每周审核发布笔记，输出数据分析",
+    "url": ""
+  },
+  {
+    "id": "node_private_domain",
+    "name": "私域运营（每日AI简讯/社群）",
+    "status": "进行中",
+    "owner": "刘雯文",
+    "start": "2025-05-06",
+    "end": "2026-07-10",
+    "priority": "重要不紧急",
+    "dependsOn": [],
+    "parents": [],
+    "deliverable": "日更AI简讯、社群拉新与运营",
+    "url": ""
+  },
+  {
+    "id": "node_kling_wechat",
+    "name": "可灵公众号专题页搭建",
+    "status": "阻塞",
+    "owner": "刘雯文",
+    "start": "2025-06-01",
+    "end": "2026-07-01",
+    "priority": "重要紧急",
+    "dependsOn": [
+      "node_ai_review_audit"
+    ],
+    "parents": [],
+    "deliverable": "完成3篇可灵公众号文章并发布",
+    "url": ""
+  },
+  {
+    "id": "node_global_report_agent",
+    "name": "全球报道Agent",
+    "status": "进行中",
+    "owner": "付明煜",
+    "start": "2026-06-29",
+    "end": "2026-07-17",
+    "priority": "重要紧急",
+    "dependsOn": [],
+    "parents": [],
+    "deliverable": "输出PRD v1.1并推进评审",
+    "url": ""
+  },
+  {
+    "id": "node_ai_bootcamp",
+    "name": "AI工具抢跑营",
+    "status": "进行中",
+    "owner": "付明煜",
+    "start": "2026-06-29",
+    "end": "2026-07-15",
+    "priority": "重要紧急",
+    "dependsOn": [
+      "node_global_report_agent"
+    ],
+    "parents": [],
+    "deliverable": "完成先例文章、问卷、资料包配置",
+    "url": ""
+  },
+  {
+    "id": "node_writing_skills",
+    "name": "文风Skill搭建",
+    "status": "进行中",
+    "owner": "付明煜",
+    "start": "2026-06-29",
+    "end": "2026-07-10",
+    "priority": "重要不紧急",
+    "dependsOn": [],
+    "parents": [],
+    "deliverable": "完成2个可调用的文风Skill",
+    "url": ""
+  },
+  {
+    "id": "node_ai_course",
+    "name": "AI工具使用课程备课",
+    "status": "进行中",
+    "owner": "付明煜",
+    "start": "2026-06-29",
+    "end": "2026-07-10",
+    "priority": "重要不紧急",
+    "dependsOn": [
+      "node_writing_skills"
+    ],
+    "parents": [],
+    "deliverable": "完成课程大纲+课件初稿",
+    "url": ""
+  },
+  {
+    "id": "node_seeking_report",
+    "name": "寻求报道",
+    "status": "阻塞",
+    "owner": "李婧瑜",
+    "start": "2026-06-22",
+    "end": "2026-07-03",
+    "priority": "重要紧急",
+    "dependsOn": [],
+    "parents": [],
+    "deliverable": "完成项目发布、热度榜与稿件跟进",
+    "url": ""
+  },
+  {
+    "id": "node_enterprise_intel",
+    "name": "企业全情报",
+    "status": "阻塞",
+    "owner": "李婧瑜",
+    "start": "2026-06-22",
+    "end": "2026-07-03",
+    "priority": "重要不紧急",
+    "dependsOn": [],
+    "parents": [],
+    "deliverable": "每日资讯整理、物料协助、问卷传播",
+    "url": ""
+  },
+  {
+    "id": "node_competitor_research",
+    "name": "观猹竞品分析",
+    "status": "已完成",
+    "owner": "张皓扬",
+    "start": "2026-06-29",
+    "end": "2026-07-10",
+    "priority": "重要不紧急",
+    "dependsOn": [],
+    "parents": [],
+    "deliverable": "完成竞品分析报告",
+    "url": ""
+  },
+  {
+    "id": "node_overseas_channels",
+    "name": "海外内容渠道搭建",
+    "status": "进行中",
+    "owner": "张皓扬",
+    "start": "2026-06-29",
+    "end": "2026-07-15",
+    "priority": "重要不紧急",
+    "dependsOn": [
+      "node_competitor_research"
+    ],
+    "parents": [],
+    "deliverable": "完成平台调研与账号搭建",
+    "url": ""
+  }
+]
