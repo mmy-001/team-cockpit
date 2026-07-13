@@ -37,7 +37,7 @@ import type {
 } from "./types";
 
 // ---- 判断是否使用 KV ----
-function useKV(): boolean {
+function hasKV(): boolean {
   // KV_REST_API_URL 是 @vercel/kv / Upstash Redis 自动注入的
   // 本地开发没有这些变量，自动 fallback 到 JSON 文件
   return !!(process.env.KV_REST_API_URL || process.env.KV_URL);
@@ -74,12 +74,12 @@ const K_MEMBERS = "members";
 // ---- Nodes ----
 
 export async function getAllNodes(): Promise<ProjectNode[]> {
-  if (useKV()) return (await kvGet<ProjectNode[]>(K_NODES)) ?? [];
+  if (hasKV()) return (await kvGet<ProjectNode[]>(K_NODES)) ?? [];
   return fsGetAllNodes();
 }
 
 export async function getNode(id: string): Promise<ProjectNode | null> {
-  if (useKV()) {
+  if (hasKV()) {
     const nodes = await getAllNodes();
     return nodes.find((n) => n.id === id) ?? null;
   }
@@ -87,7 +87,7 @@ export async function getNode(id: string): Promise<ProjectNode | null> {
 }
 
 export async function createNode(data: Omit<ProjectNode, "id" | "url">): Promise<ProjectNode> {
-  if (useKV()) {
+  if (hasKV()) {
     const nodes = (await kvGet<ProjectNode[]>(K_NODES)) ?? [];
     const id = idGen();
     const node: ProjectNode = { ...data, id, url: "" };
@@ -102,7 +102,7 @@ export async function createNode(data: Omit<ProjectNode, "id" | "url">): Promise
 }
 
 export async function updateNode(id: string, patch: Partial<ProjectNode>): Promise<ProjectNode> {
-  if (useKV()) {
+  if (hasKV()) {
     const nodes = (await kvGet<ProjectNode[]>(K_NODES)) ?? [];
     const idx = nodes.findIndex((n) => n.id === id);
     if (idx === -1) throw new Error(`Node ${id} not found`);
@@ -118,7 +118,7 @@ export async function updateNode(id: string, patch: Partial<ProjectNode>): Promi
 }
 
 export async function deleteNode(id: string): Promise<void> {
-  if (useKV()) {
+  if (hasKV()) {
     const nodes = (await kvGet<ProjectNode[]>(K_NODES)) ?? [];
     const filtered = nodes.filter((n) => n.id !== id);
     await kvSet(K_NODES, filtered);
@@ -130,12 +130,12 @@ export async function deleteNode(id: string): Promise<void> {
 // ---- Weeklies ----
 
 export async function getAllWeeklies(): Promise<WeeklyReport[]> {
-  if (useKV()) return (await kvGet<WeeklyReport[]>(K_WEEKLIES)) ?? [];
+  if (hasKV()) return (await kvGet<WeeklyReport[]>(K_WEEKLIES)) ?? [];
   return fsGetAllWeeklies();
 }
 
 export async function getWeekly(id: string): Promise<WeeklyReport | null> {
-  if (useKV()) {
+  if (hasKV()) {
     const weeklies = await getAllWeeklies();
     return weeklies.find((w) => w.id === id) ?? null;
   }
@@ -143,7 +143,7 @@ export async function getWeekly(id: string): Promise<WeeklyReport | null> {
 }
 
 export async function getWeekliesForNode(nodeId: string): Promise<WeeklyReport[]> {
-  if (useKV()) {
+  if (hasKV()) {
     const weeklies = await getAllWeeklies();
     return weeklies.filter((w) => w.relatedNodes.includes(nodeId));
   }
@@ -151,7 +151,7 @@ export async function getWeekliesForNode(nodeId: string): Promise<WeeklyReport[]
 }
 
 export async function getWeekliesForWeek(monday: string): Promise<WeeklyReport[]> {
-  if (useKV()) {
+  if (hasKV()) {
     const weeklies = await getAllWeeklies();
     return weeklies.filter((w) => w.week === monday);
   }
@@ -159,7 +159,7 @@ export async function getWeekliesForWeek(monday: string): Promise<WeeklyReport[]
 }
 
 export async function createWeekly(data: Omit<WeeklyReport, "id" | "url">): Promise<WeeklyReport> {
-  if (useKV()) {
+  if (hasKV()) {
     const weeklies = (await kvGet<WeeklyReport[]>(K_WEEKLIES)) ?? [];
     const id = idGen();
     const weekly: WeeklyReport = { ...data, id, url: "" };
@@ -171,7 +171,7 @@ export async function createWeekly(data: Omit<WeeklyReport, "id" | "url">): Prom
 }
 
 export async function updateWeekly(id: string, patch: Partial<WeeklyReport>): Promise<WeeklyReport> {
-  if (useKV()) {
+  if (hasKV()) {
     const weeklies = (await kvGet<WeeklyReport[]>(K_WEEKLIES)) ?? [];
     const idx = weeklies.findIndex((w) => w.id === id);
     if (idx === -1) throw new Error(`Weekly ${id} not found`);
@@ -184,7 +184,7 @@ export async function updateWeekly(id: string, patch: Partial<WeeklyReport>): Pr
 }
 
 export async function deleteWeekly(id: string): Promise<void> {
-  if (useKV()) {
+  if (hasKV()) {
     const weeklies = (await kvGet<WeeklyReport[]>(K_WEEKLIES)) ?? [];
     const filtered = weeklies.filter((w) => w.id !== id);
     await kvSet(K_WEEKLIES, filtered);
@@ -200,7 +200,7 @@ export async function deleteWeekly(id: string): Promise<void> {
 // ---- Weekly Blocks ----
 
 export async function getWeeklyBlocks(id: string): Promise<any[]> {
-  if (useKV()) {
+  if (hasKV()) {
     const blocks = (await kvGet<Record<string, any[]>>(K_BLOCKS)) ?? {};
     return blocks[id] ?? [];
   }
@@ -208,7 +208,7 @@ export async function getWeeklyBlocks(id: string): Promise<any[]> {
 }
 
 export async function setWeeklyBlocks(id: string, blocks: any[]): Promise<void> {
-  if (useKV()) {
+  if (hasKV()) {
     const all = (await kvGet<Record<string, any[]>>(K_BLOCKS)) ?? {};
     all[id] = blocks;
     await kvSet(K_BLOCKS, all);
@@ -220,7 +220,7 @@ export async function setWeeklyBlocks(id: string, blocks: any[]): Promise<void> 
 // ---- Members ----
 
 export async function getAllMembers(): Promise<Member[]> {
-  if (useKV()) {
+  if (hasKV()) {
     let members = (await kvGet<Member[]>(K_MEMBERS)) ?? [];
     // 自动从 nodes 补充新负责人
     const nodes = await getAllNodes();
@@ -238,7 +238,7 @@ export async function getAllMembers(): Promise<Member[]> {
 }
 
 export async function createMember(name: string): Promise<Member> {
-  if (useKV()) {
+  if (hasKV()) {
     const members = await getAllMembers();
     if (members.some((m) => m.name === name)) throw new Error(`成员 "${name}" 已存在`);
     const member: Member = { id: idGen(), name, archived: false };
@@ -250,7 +250,7 @@ export async function createMember(name: string): Promise<Member> {
 }
 
 export async function updateMember(id: string, patch: Partial<Member>): Promise<Member> {
-  if (useKV()) {
+  if (hasKV()) {
     const members = await getAllMembers();
     const idx = members.findIndex((m) => m.id === id);
     if (idx === -1) throw new Error(`成员 ${id} 不存在`);
@@ -262,7 +262,7 @@ export async function updateMember(id: string, patch: Partial<Member>): Promise<
 }
 
 export async function deleteMember(id: string): Promise<void> {
-  if (useKV()) {
+  if (hasKV()) {
     const members = await getAllMembers();
     const filtered = members.filter((m) => m.id !== id);
     await kvSet(K_MEMBERS, filtered);
