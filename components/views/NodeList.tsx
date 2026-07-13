@@ -207,7 +207,10 @@ export default function NodeList({
   }
 
   async function handleDeleteMember(id: string, name: string) {
-    if (!confirm(`确定删除成员「${name}」？该成员下的节点不会被删除，只是不再按此成员分组显示。`)) return;
+    if (!confirm(
+      `确定删除成员「${name}」？\n\n` +
+      `这将同时删除该成员负责的所有节点和撰写的所有周报，此操作不可撤销。`
+    )) return;
     setError(null);
     try {
       const res = await fetch("/api/members", {

@@ -335,7 +335,37 @@ export async function updateMember(id: string, patch: Partial<Member>): Promise<
 
 export async function deleteMember(id: string): Promise<void> {
   if (hasRedis()) {
-    const members = await getAllMembers();
+    const members = (await redisGet<Member[]>(K_MEMBERS)) ?? [];
+    const member = members.find((m) => m.id === id);
+    if (!member) throw new Error(`成员 ${id} 不存在`);
+
+    // 1. 级联删除该成员负责的所有节点
+    const nodes = (await redisGet<ProjectNode[]>(K_NODES)) ?? [];
+    const remainingNodes = nodes.filter((n) => n.owner !== member.name);
+    if (remainingNodes.length !== nodes.length) {
+      await redisSet(K_NODES, remainingNodes);
+    }
+
+    // 2. 级联删除该成员撰写的所有周报（含 blocks）
+    const weeklies = (await redisGet<WeeklyReport[]>(K_WEEKLIES)) ?? [];
+    const memberWeeklyIds: string[] = [];
+    const remainingWeeklies = weeklies.filter((w) => {
+      if (w.author === member.name) {
+        memberWeeklyIds.push(w.id);
+        return false;
+      }
+      return true;
+    });
+    if (remainingWeeklies.length !== weeklies.length) {
+      await redisSet(K_WEEKLIES, remainingWeeklies);
+      if (memberWeeklyIds.length > 0) {
+        const blocks = (await redisGet<Record<string, any[]>>(K_BLOCKS)) ?? {};
+        memberWeeklyIds.forEach((wid) => delete blocks[wid]);
+        await redisSet(K_BLOCKS, blocks);
+      }
+    }
+
+    // 3. 物理删除成员
     const filtered = members.filter((m) => m.id !== id);
     await redisSet(K_MEMBERS, filtered);
     return;
