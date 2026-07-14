@@ -249,7 +249,8 @@ export default function WeeklyDetailPage() {
             <div className="border border-notion-blue/30 rounded p-3 bg-blue-50/30 space-y-3">
               <p className="text-xs text-gray-600 leading-relaxed">
                 将本周工作内容粘贴到下方（支持口述转文字），AI 将自动识别内容归属，
-                拆解为四段式周报，<strong>同时生成一句话总结和完整正文</strong>。
+                拆解为四段式周报。<strong>AI 仅使用你提供的信息，不会编造或脑补</strong>，
+                未涉及的板块将留空待你手动补充。
               </p>
               <textarea
                 value={aiInput}
