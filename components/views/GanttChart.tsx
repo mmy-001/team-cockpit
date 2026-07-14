@@ -10,7 +10,7 @@ const ROW_HEIGHT = 46;
 const HEADER_HEIGHT = 44;
 const BAR_HEIGHT = 22;
 const SIDEBAR_WIDTH = 200;
-const WINDOW_DAYS = 15; // 今天前 7 天 + 今天 + 后 7 天
+const WINDOW_DAYS = 21; // 今天前 10 天 + 今天 + 后 10 天
 
 import { beijingNow, parseLocal } from "@/lib/date";
 
@@ -45,20 +45,46 @@ export default function GanttChart({ nodes }: { nodes: ProjectNode[] }) {
   const router = useRouter();
   const today = useMemo(() => beijingNow(), []);
   const [offsetDays, setOffsetDays] = useState(0);
+  const [showCompleted, setShowCompleted] = useState(false);
 
-  const { dated, undated, startDate, totalDays, endDate } = useMemo(() => {
-    const dated = nodes.filter((n) => n.start);
-    const undated = nodes.filter((n) => !n.start);
-
+  const {
+    activeRows,
+    completedInWindow,
+    startDate,
+    totalDays,
+    endDate,
+  } = useMemo(() => {
     const center = addDays(today, offsetDays);
     const start = addDays(center, -Math.floor(WINDOW_DAYS / 2));
     const end = addDays(center, Math.floor(WINDOW_DAYS / 2));
     const totalDays = daysBetween(start, end) + 1;
 
-    return { dated, undated, startDate: start, endDate: end, totalDays };
+    // 判断节点日期范围是否与当前窗口有交集
+    function overlapsWindow(node: ProjectNode): boolean {
+      if (!node.start) return true; // 未排期始终显示
+      const nodeStart = parseLocal(node.start)!;
+      const nodeEnd = node.end ? parseLocal(node.end)! : nodeStart;
+      return nodeEnd >= start && nodeStart <= end;
+    }
+
+    const active = nodes.filter((n) => n.status !== "已完成");
+    const completed = nodes.filter((n) => n.status === "已完成");
+
+    // 活跃节点：有日期 + 与窗口有交集，未排期始终保留
+    const activeDated = active.filter((n) => n.start && overlapsWindow(n));
+    const activeUndated = active.filter((n) => !n.start);
+    const activeRows = [...activeDated, ...activeUndated];
+
+    // 已完成节点：仅在窗口内有交集的
+    const completedInWindow = completed.filter((n) => overlapsWindow(n));
+
+    return { activeRows, completedInWindow, startDate: start, endDate: end, totalDays };
   }, [nodes, today, offsetDays]);
 
-  const allRows = [...dated, ...undated];
+  const completedHiddenCount = completedInWindow.length;
+  const allRows = showCompleted
+    ? [...activeRows, ...completedInWindow]
+    : activeRows;
   const width = totalDays * DAY_WIDTH;
   const height = HEADER_HEIGHT + allRows.length * ROW_HEIGHT + 12;
 
@@ -72,9 +98,33 @@ export default function GanttChart({ nodes }: { nodes: ProjectNode[] }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-500 bg-gray-50 px-3 py-2 rounded border border-notion-border">
-          以北京时间 {formatMonthDay(today)} 为中心，共 {WINDOW_DAYS} 天；点击任务条进入编辑。
+      {/* 控制栏 */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500 bg-gray-50 px-3 py-2 rounded border border-notion-border">
+            以 {formatMonthDay(today)} 为中心 × {WINDOW_DAYS} 天；展示 {allRows.length} 个任务
+            {completedHiddenCount > 0 && !showCompleted && (
+              <span className="text-gray-400 ml-1">（{completedHiddenCount} 个已完成已隐藏）</span>
+            )}
+          </span>
+          {/* 显示已完成开关 */}
+          <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+            <button
+              role="switch"
+              aria-checked={showCompleted}
+              onClick={() => setShowCompleted((v) => !v)}
+              className={`relative w-8 h-4.5 rounded-full transition-colors ${
+                showCompleted ? "bg-notion-blue" : "bg-gray-300"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow transition-transform ${
+                  showCompleted ? "translate-x-4" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+            显示已完成
+          </label>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -99,6 +149,13 @@ export default function GanttChart({ nodes }: { nodes: ProjectNode[] }) {
         </div>
       </div>
 
+      {/* 空状态 */}
+      {allRows.length === 0 ? (
+        <div className="border border-notion-border rounded-md bg-white py-16 text-center text-gray-400">
+          <p className="text-sm">当前时间窗口内无活跃任务</p>
+          <p className="text-xs mt-1">试试切换到其他时间段，或打开「显示已完成」查看历史任务</p>
+        </div>
+      ) : (
       <div className="border border-notion-border rounded-md overflow-hidden bg-white flex">
         {/* Left sidebar */}
         <div className="shrink-0 border-r border-notion-border bg-notion-gray" style={{ width: SIDEBAR_WIDTH }}>
@@ -223,6 +280,7 @@ export default function GanttChart({ nodes }: { nodes: ProjectNode[] }) {
           </svg>
         </div>
       </div>
+      )}
     </div>
   );
 }
