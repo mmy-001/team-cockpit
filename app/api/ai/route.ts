@@ -363,11 +363,9 @@ export async function POST(req: NextRequest) {
     }
 
     // ====== 策略3: 彻底失败，返回错误 ======
+    console.error("[AI format error] unexpected reply:", reply.slice(0, 200));
     return NextResponse.json(
-      {
-        error: "AI 返回格式异常，请重试或手动整理",
-        debug: reply.slice(0, 300),
-      },
+      { error: "AI 返回格式异常，请重试或手动整理" },
       { status: 422 }
     );
   } catch (err: any) {

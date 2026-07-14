@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import * as store from "@/lib/storage";
 
 export async function GET() {
-  const members = await store.getAllMembers();
-  return NextResponse.json({ members });
+  try {
+    const members = await store.getAllMembers();
+    return NextResponse.json({ members });
+  } catch (err: any) {
+    console.error("GET /api/members", err);
+    return NextResponse.json({ error: err.message ?? "获取成员列表失败" }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {

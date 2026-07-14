@@ -3,11 +3,16 @@ import * as store from "@/lib/storage";
 import { updateProjectNode, archiveProjectNode } from "@/lib/notion";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const node = await store.getNode(params.id);
-  if (!node) {
-    return NextResponse.json({ error: "Node not found" }, { status: 404 });
+  try {
+    const node = await store.getNode(params.id);
+    if (!node) {
+      return NextResponse.json({ error: "Node not found" }, { status: 404 });
+    }
+    return NextResponse.json({ node, source: "local" });
+  } catch (err: any) {
+    console.error("GET /api/nodes/[id]", err);
+    return NextResponse.json({ error: err.message ?? "获取节点失败" }, { status: 500 });
   }
-  return NextResponse.json({ node, source: "local" });
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {

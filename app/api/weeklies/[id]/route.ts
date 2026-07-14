@@ -3,12 +3,17 @@ import * as store from "@/lib/storage";
 import { updateWeeklyReport, replaceWeeklyReportBlocks, archiveWeeklyReport } from "@/lib/notion";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const weekly = await store.getWeekly(params.id);
-  if (!weekly) {
-    return NextResponse.json({ error: "Weekly not found" }, { status: 404 });
+  try {
+    const weekly = await store.getWeekly(params.id);
+    if (!weekly) {
+      return NextResponse.json({ error: "Weekly not found" }, { status: 404 });
+    }
+    const blocks = await store.getWeeklyBlocks(params.id);
+    return NextResponse.json({ weekly, blocks, source: "local" });
+  } catch (err: any) {
+    console.error("GET /api/weeklies/[id]", err);
+    return NextResponse.json({ error: err.message ?? "获取周报失败" }, { status: 500 });
   }
-  const blocks = await store.getWeeklyBlocks(params.id);
-  return NextResponse.json({ weekly, blocks, source: "local" });
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {

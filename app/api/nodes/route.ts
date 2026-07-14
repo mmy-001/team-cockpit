@@ -3,8 +3,13 @@ import * as store from "@/lib/storage";
 import { createProjectNode } from "@/lib/notion";
 
 export async function GET() {
-  const nodes = await store.getAllNodes();
-  return NextResponse.json({ nodes, source: "local" });
+  try {
+    const nodes = await store.getAllNodes();
+    return NextResponse.json({ nodes, source: "local" });
+  } catch (err: any) {
+    console.error("GET /api/nodes", err);
+    return NextResponse.json({ error: err.message ?? "获取节点列表失败" }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {

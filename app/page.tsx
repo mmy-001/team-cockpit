@@ -49,6 +49,12 @@ export default function Home() {
 
   // 监听浏览器 hash 变化（前进/后退），同步到 activeTab
   useEffect(() => {
+    // 挂载时将 URL hash 对齐到当前 activeTab，避免 hash 残留导致覆盖
+    const currentHash = window.location.hash.replace("#", "");
+    if (currentHash !== activeTabRef.current) {
+      window.location.hash = activeTabRef.current;
+    }
+
     const syncFromHash = () => {
       const id = window.location.hash.replace("#", "");
       if (id && TAB_IDS.has(id) && id !== activeTabRef.current) {
@@ -57,10 +63,8 @@ export default function Home() {
       }
     };
     window.addEventListener("hashchange", syncFromHash);
-    // 首次挂载时也执行一次，兜底 Next.js App Router 客户端导航回来后
-    // hash 已存在但 useEffect 的 deps 没变的情况
-    syncFromHash();
     return () => window.removeEventListener("hashchange", syncFromHash);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setTab = useCallback((id: string) => {
